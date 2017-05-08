@@ -1,15 +1,10 @@
 class Classifier
-  include Singleton
-
   attr_accessor :train_examples
   attr_accessor :test_examples
 
-  def initialize pos_docs_path: 'app/data/pos/*', neg_docs_path: 'app/data/neg/*'
-    postive_docs = Dir[pos_docs_path]
-    negative_docs = Dir[neg_docs_path]
-
-    @train_examples = Examples.new pos_doc_paths: postive_docs.first(700), neg_doc_paths: negative_docs.first(700)
-    @test_examples = Examples.new pos_doc_paths: postive_docs.last(300), neg_doc_paths: negative_docs.last(300)
+  def initialize pos_docs_train:, pos_docs_test:, neg_docs_train:, neg_docs_test:
+    @train_examples = Examples.new pos_doc_paths: pos_docs_train, neg_doc_paths: neg_docs_train
+    @test_examples = Examples.new pos_doc_paths: pos_docs_test, neg_doc_paths: neg_docs_test
   end
 
   def classify_doc doc
@@ -22,13 +17,17 @@ class Classifier
     end
 
     positive_prob > negative_prob ? 1 : 0
-  end
+  end 
 
   def accuracy
     BigDecimal.new(cross_validation) / (test_examples.size)
   end
 
   def cross_validation
-    test_examples.all.inject(0) { |acc, doc| acc += doc.score  }
+    test_examples.all.inject(0) do |acc, doc|
+      classified_klass = classify_doc doc 
+      score = doc.klass == classified_klass ? 1 : 0 
+      acc += score
+   end
   end
 end
